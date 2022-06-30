@@ -1,0 +1,7 @@
+.idea
+go.sum
+!frontend/dist/empty
+frontend
+static
+*.db
+*.exe

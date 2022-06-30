@@ -1,0 +1,1 @@
+{"file":"D:/project/GoProject/global/db.go:30","func":"GoProject/global.(*DbManager).Migrate","level":"info","msg":"migrate database success","time":"2022-06-30T14:46:53+08:00"}
