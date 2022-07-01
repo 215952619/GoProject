@@ -55,7 +55,7 @@ func Resolve() gin.HandlerFunc {
 				c.Abort()
 			}
 		} else {
-			if err := global.DB.Where("id=?", user.ID).First(&user).Error; err != nil {
+			if global.DBM.First(&user, "id=?", user.ID) != nil {
 				//not found
 				c.JSON(http.StatusOK, nil)
 				c.Abort()

@@ -30,6 +30,14 @@ func (dm *DbManager) Migrate() {
 	Logger.Info("migrate database success")
 }
 
+func (dm *DbManager) First(target interface{}, query interface{}, args ...interface{}) error {
+	return dm.db.Where(query, args).First(target).Error
+}
+
+func (dm *DbManager) List(target interface{}) error {
+	return dm.db.Find(target).Error
+}
+
 func InitDb() {
 	db, err := gorm.Open(sqlite.Open(DbPath))
 	if err != nil {
