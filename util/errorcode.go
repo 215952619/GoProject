@@ -1,4 +1,4 @@
-package core
+package util
 
 import "errors"
 
@@ -25,4 +25,5 @@ var (
 	NothingError     = errors.New("请求成功")
 	UnKnowError      = errors.New("未知错误")
 	InBlackListError = errors.New("您已被列入黑名单")
+	TokenEmptyError  = errors.New("tokenString not allow nil")
 )

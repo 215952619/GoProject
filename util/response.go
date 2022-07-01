@@ -1,4 +1,4 @@
-package core
+package util
 
 type ResponseData struct {
 	Code ErrorCode   `json:"code"`
@@ -7,7 +7,6 @@ type ResponseData struct {
 }
 
 func (rd *ResponseData) SetDefault() {
-	rd.Code = Nothing
 	rd.Msg = "success"
 }
 

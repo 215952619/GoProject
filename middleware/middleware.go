@@ -39,6 +39,39 @@ func Cors() gin.HandlerFunc {
 	}
 }
 
+func Resolve() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var user *global.User
+		user, err := util.ParseJwt(c)
+		if err != nil {
+			//todo sign
+			//errorcode
+			if err != nil {
+				global.Logger.Debug("not logon")
+				c.Next()
+			} else {
+				// parsed failed expired...
+				c.JSON(http.StatusOK, nil)
+				c.Abort()
+			}
+		} else {
+			if err := global.DB.Where("id=?", user.ID).First(&user).Error; err != nil {
+				//not found
+				c.JSON(http.StatusOK, nil)
+				c.Abort()
+			}
+			if user.Status == global.Closed {
+				//in black list
+				c.JSON(http.StatusOK, nil)
+				c.Abort()
+			}
+
+			c.Set(global.AuthedKey, user)
+			c.Next()
+		}
+	}
+}
+
 func HtmlRender(urlPrefix string, fs embed.FS) gin.HandlerFunc {
 	const indexHtml = "index.html"
 	const basePath = "frontend/dist"
@@ -87,27 +120,13 @@ func HtmlRender(urlPrefix string, fs embed.FS) gin.HandlerFunc {
 
 func LogonOnly() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var user *global.User
-		user, err := util.ParseJwt(c)
-		if err != nil {
-			//todo sign
-			c.JSON(http.StatusOK, gin.H{"msg": "not match"})
-			c.Abort()
-		} else {
-			if err := global.DB.Where("id=?", user.ID).First(&user).Error; err != nil {
-				//not found
-				c.JSON(http.StatusOK, nil)
-				c.Abort()
-			}
-			if user.Status == global.Closed {
-				//in black list
-				c.JSON(http.StatusOK, nil)
-				c.Abort()
-			}
-
-			c.Set(global.AuthedKey, user)
+		_, exists := c.Get(global.AuthedKey)
+		if exists {
 			c.Next()
 		}
+		// not logon
+		c.JSON(http.StatusOK, nil)
+		c.Abort()
 	}
 }
 

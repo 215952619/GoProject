@@ -52,7 +52,7 @@ func ParseJwt(c *gin.Context) (*global.User, error) {
 	}
 	if tokenString == "" {
 		global.Logger.Debug("tokenString not allow nil")
-		return nil, errors.New("tokenString not allow nil")
+		return nil, TokenEmptyError
 	}
 	claims := global.UserStdClaims{}
 	_, err = jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {

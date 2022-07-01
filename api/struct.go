@@ -5,10 +5,10 @@ import "GoProject/util"
 type logonRequest struct {
 	Identifier string `json:"identifier"`
 	Password   string `json:"pwd"`
-	Code       int    `json:"code"`
+	Dots       int    `json:"dots"`
 	ValidCode  string `json:"valid_code"`
 }
 
-func (lr *logonRequest) CheckCode() (bool, error) {
-	return util.CheckCaptcha(), nil
+func (lr *logonRequest) CheckCode() (bool, bool) {
+	return util.CheckCaptcha(lr.Dots, lr.ValidCode)
 }
