@@ -18,29 +18,37 @@ const (
 	Upgrading
 	NotImplemented
 	TokenEmpty
+	CaptchaParseFailed
+	CaptchaInvalid
 )
 
 var (
-	NothingError     = Error(Nothing, "请求成功")
-	UnKnowError      = Error(UnKnow, "未知错误")
-	InBlackListError = Error(InBlackList, "您已被列入黑名单")
-	TokenEmptyError  = Error(TokenEmpty, "找不到用户凭据")
+	NothingErrorTemplate            = New(Nothing, "请求成功")
+	UnKnowErrorTemplate             = New(UnKnow, "未知错误")
+	InBlackListErrorTemplate        = New(InBlackList, "您已被列入黑名单，请联系站长解除")
+	TokenEmptyErrorTemplate         = New(TokenEmpty, "找不到用户凭据")
+	InvalidSignErrorTemplate        = New(InvalidSign, "用户凭据解析失败")
+	NotFoundErrorTemplate           = New(NotFound, "未找到指定资源")
+	NotLogonErrorTemplate           = New(NotLogon, "未登录")
+	PermissionDeniedErrorTemplate   = New(PermissionDenied, "没有权限访问该资源")
+	ParamsParseFailedErrorTemplate  = New(ParamsParseFailed, "参数错误")
+	CaptchaParseFailedErrorTemplate = New(CaptchaParseFailed, "验证码解析失败")
+	CaptchaInvalidErrorTemplate     = New(CaptchaInvalid, "验证码校对失败，请重试")
 )
 
-func Error(code ErrorCode, text string) error {
-	return &errorString{code: code, s: text}
+type ErrorString struct {
+	Code     ErrorCode `json:"code"`
+	Template string    `json:"template,omitempty"`
 }
 
-// errorString is a trivial implementation of error.
-type errorString struct {
-	code ErrorCode
-	s    string
+func (e *ErrorString) Error() string {
+	return e.Template
 }
 
-func (e *errorString) Code() ErrorCode {
-	return e.code
+func (e *ErrorString) ToError() error {
+	return e
 }
 
-func (e *errorString) Error() string {
-	return e.s
+func New(code ErrorCode, text string) *ErrorString {
+	return &ErrorString{Code: code, Template: text}
 }

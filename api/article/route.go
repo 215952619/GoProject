@@ -5,9 +5,9 @@ import (
 )
 
 func InitRoute(rg *gin.RouterGroup) {
-	userRouter := rg.Group("/article")
+	articleRouter := rg.Group("/article")
 
-	userRouter.GET("", defaultHandler)
-	userRouter.GET("/overflow", defaultHandler)
-	userRouter.GET("/list", defaultHandler)
+	articleRouter.GET("", defaultHandler)
+	articleRouter.GET("/overflow", defaultHandler)
+	articleRouter.GET("/list", defaultHandler)
 }

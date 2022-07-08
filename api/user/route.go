@@ -10,6 +10,7 @@ func InitRoute(rg *gin.RouterGroup) {
 	userRouter.Use(middleware.LogonOnly())
 
 	userRouter.GET("", defaultHandler)
+	userRouter.POST("", createUser)
 	userRouter.GET("/list", middleware.AdminOnly(), userList)
 	userRouter.GET("/:id", middleware.AdminOnly(), userDetail)
 }

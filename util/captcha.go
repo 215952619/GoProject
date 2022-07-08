@@ -18,22 +18,22 @@ func NewCaptcha() (string, string, string, error) {
 		return "", "", "", errors.New("generate captcha error")
 	} else {
 		str, _ := json.Marshal(dots)
-		key, _ := AesEncrypt(str, global.DefaultAesSecret)
+		key, _ := AesEncrypt(str, []byte(global.AesSecret)[:global.AesLength])
 		return base64, thumbBase64, string(key), nil
 	}
 }
 
-func CheckCaptcha(dots interface{}, secret string) (bool, bool) {
+func CheckCaptcha(dots interface{}, secret string) (bool, error) {
 	type dot [][]int
 	dotMap := dots.(dot)
-	realDots, err := AesDecrypt([]byte(secret), global.DefaultAesSecret)
+	realDots, err := AesDecrypt([]byte(secret), []byte(global.AesSecret)[:global.AesLength])
 	if err != nil {
 		global.Logger.WithFields(logrus.Fields{
 			"dots":   dotMap,
 			"secret": secret,
 			"err":    err.Error(),
 		}).Error("Decrypt secret error")
-		return false, false
+		return false, err
 	}
 	var realDotMap []captcha.CharDot
 	err = json.Unmarshal(realDots, &realDotMap)
@@ -42,19 +42,19 @@ func CheckCaptcha(dots interface{}, secret string) (bool, bool) {
 			"realDots": string(realDots),
 			"err":      err.Error(),
 		}).Error("dots unmarshal error")
-		return false, false
+		return false, err
 	}
 
 	if len(dotMap) != len(realDotMap) {
-		return false, true
+		return false, nil
 	}
 
 	for index, dot := range realDotMap {
 		target := dotMap[index]
 		if !captcha.CheckPointDistWithPadding(int64(target[0]), int64(target[1]), int64(dot.Dx), int64(dot.Dy), int64(dot.Width), int64(dot.Height), 5) {
-			return false, true
+			return false, nil
 		}
 	}
 
-	return true, true
+	return true, nil
 }

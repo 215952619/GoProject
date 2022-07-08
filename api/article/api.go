@@ -6,5 +6,6 @@ import (
 )
 
 func defaultHandler(c *gin.Context) {
+	panic("panic msg")
 	c.JSON(http.StatusOK, gin.H{"msg": "not Implementation"})
 }

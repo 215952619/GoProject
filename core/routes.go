@@ -9,7 +9,9 @@ import (
 )
 
 func InitRoutes(sources *embed.FS) *gin.Engine {
-	r := gin.Default()
+	r := gin.New()
+	r.Use(middleware.Recovery())
+	r.Use(gin.Logger())
 	r.Use(middleware.Cors())
 	r.Static("/static", "./static")
 	api.InitRoute(r)

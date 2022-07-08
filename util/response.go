@@ -1,25 +1,29 @@
 package util
 
+import "net/http"
+
 type ResponseData struct {
 	Code ErrorCode   `json:"code"`
 	Msg  string      `json:"msg"`
 	Data interface{} `json:"data,omitempty"`
 }
 
-func (rd *ResponseData) SetDefault() {
-	rd.Msg = "success"
+func SuccessResponse(data interface{}) (int, *ResponseData) {
+	return CustomResponse(NothingErrorTemplate, "", data)
 }
 
-func (rd *ResponseData) Merge(data *ResponseData) {
-	rd.Code = data.Code
-	rd.Msg = data.Msg
-	rd.Data = data.Data
+func UnKnowResponse(msg string) (int, *ResponseData) {
+	return CustomResponse(UnKnowErrorTemplate, msg, nil)
 }
 
-func SuccessResponse(data interface{}) *ResponseData {
-	return &ResponseData{
-		Code: Nothing,
-		Msg:  NothingError.Error(),
+func CustomResponse(err *ErrorString, msg string, data interface{}) (int, *ResponseData) {
+	temp := &ResponseData{
+		Code: err.Code,
+		Msg:  err.Template,
 		Data: data,
 	}
+	if len(msg) > 0 {
+		temp.Msg = msg
+	}
+	return http.StatusOK, temp
 }

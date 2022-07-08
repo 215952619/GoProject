@@ -1,65 +1,51 @@
-package global
+package database
 
 import (
+	"GoProject/global"
+	"GoProject/util"
 	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"time"
 )
-
-var (
-	DB  *gorm.DB
-	DBM *DbManager
-)
-
-type DbManager struct {
-	db *gorm.DB
-}
-
-func (dm *DbManager) Migrate() {
-	if err := dm.db.AutoMigrate(
-		&User{},
-		&Article{},
-	); err != nil {
-		Logger.WithFields(logrus.Fields{
-			"err": err,
-		}).Panic("migrate database panic")
-	}
-	Logger.Info("migrate database success")
-}
-
-func (dm *DbManager) First(target interface{}, query interface{}, args ...interface{}) error {
-	return dm.db.Where(query, args).First(target).Error
-}
-
-func (dm *DbManager) List(target interface{}) error {
-	return dm.db.Find(target).Error
-}
-
-func InitDb() {
-	db, err := gorm.Open(sqlite.Open(DbPath))
-	if err != nil {
-		Logger.WithFields(logrus.Fields{
-			"err": err,
-		}).Panic("init db panic")
-	}
-
-	DBM = &DbManager{db}
-	DBM.Migrate()
-	DB = db
-}
 
 type User struct {
 	gorm.Model
 	Name      string `json:"name"`
 	Password  string `json:"-"`
-	Phone     string `json:"phone"`
-	Email     string `json:"email"`
+	Phone     string `json:"phone" gorm:"unique"`
+	Email     string `json:"email" gorm:"unique"`
 	Role      UserRoles
 	Status    UserStatus
 	GithubTag int `json:"github_tag,omitempty"`
+}
+
+func (u *User) CheckPwd(pwd string) bool {
+	pwdSha256 := util.GetSha256(pwd)
+	return u.Password == pwdSha256
+}
+
+func (u *User) GenJwt() (string, error) {
+	//return util.GenerateJwt(u)
+	expiredTime := time.Now().Add(global.DefaultValidityPeriod)
+	stdClaims := jwt.StandardClaims{
+		ExpiresAt: expiredTime.Unix(),
+		IssuedAt:  time.Now().Unix(),
+		Id:        string(u.ID),
+		Issuer:    global.AppIssuer,
+	}
+	uClaims := UserStdClaims{StandardClaims: stdClaims, User: u}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, uClaims)
+	tokenString, err := token.SignedString(global.AppJwtSecret)
+	if err != nil {
+		global.Logger.WithFields(logrus.Fields{
+			"err":  err,
+			"user": u,
+		}).Error("generate jwt error")
+		return "", err
+	}
+	return tokenString, nil
 }
 
 type UserStdClaims struct {
@@ -71,7 +57,7 @@ func (c UserStdClaims) Valid() (err error) {
 	if c.StandardClaims.ExpiresAt < time.Now().Unix() {
 		return errors.New("token is expired")
 	}
-	if c.StandardClaims.Issuer != AppIssuer {
+	if c.StandardClaims.Issuer != global.AppIssuer {
 		return errors.New("token's issuer is wrong")
 	}
 	if c.User.ID < 1 {
@@ -84,9 +70,9 @@ type UserRoles int
 type UserStatus int
 
 const (
-	SuperAdmin UserRoles = iota
+	Normal UserRoles = iota
 	Admin
-	Normal
+	SuperAdmin
 
 	Pending UserStatus = iota
 	Active
@@ -107,13 +93,9 @@ func (ur UserRoles) String() (string, error) {
 	case 2:
 		return "normal", nil
 	default:
-		Logger.WithFields(logrus.Fields{
+		global.Logger.WithFields(logrus.Fields{
 			"userRole": ur,
 		}).Error("parse user role error")
 		return "", errors.New("parse user role error")
 	}
-}
-
-type Article struct {
-	gorm.Model
 }

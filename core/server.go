@@ -1,14 +1,17 @@
 package core
 
 import (
+	"GoProject/database"
 	"GoProject/global"
+	"GoProject/util"
 	"embed"
 	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
 func InitServer(sources *embed.FS) {
-	global.InitDb()
+	util.InitCache()
+	database.InitDb()
 	r := InitRoutes(sources)
 
 	s := &http.Server{
