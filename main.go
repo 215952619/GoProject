@@ -14,7 +14,7 @@ func init() {
 	flag.StringVar(&global.Mode, "mode", "product", "application run mode")
 	flag.BoolVar(&global.Test, "test", false, "application deployment mode")
 	flag.StringVar(&global.Level, "level", "warn", "application log level")
-	flag.StringVar(&global.Action, "action", "install", "application service action")
+	flag.StringVar(&global.Action, "action", "start", "application service action")
 	flag.Parse()
 
 	core.InitLogger()
@@ -29,6 +29,8 @@ func main() {
 		}
 		if global.Action != "" {
 			service.Control(global.Action)
+		} else {
+			core.InitServer(&sources)
 		}
 	default:
 		core.InitServer(&sources)

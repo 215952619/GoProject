@@ -29,4 +29,6 @@ var (
 	GithubClientId                 = "c0dd74661681f232b222"
 	GithubClientSecret             = "84394c77b869f7e52d11f69a8530ad8e8f977dfd"
 	SsoRedirectUrl                 = "http://10.0.7.112:3000/logon"
+	GiteePersonalToken             = "f67ed18693a0e8fa0187e00f7fe19249"
+	MaxTopArticle                  = 5
 )

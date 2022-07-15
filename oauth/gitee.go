@@ -11,8 +11,20 @@ import (
 )
 
 type GiteeTokenResponse struct {
-	Error            string `json:"error"`
-	ErrorDescription string `json:"error_description"`
+	Error            string `json:"error,omitempty"`
+	ErrorDescription string `json:"error_description,omitempty"`
+	AccessToken      string `json:"access_token,omitempty"`
+	TokenType        string `json:"token_type,omitempty"`
+	RefreshToken     string `json:"refresh_token,omitempty"`
+	Scope            string `json:"scope,omitempty"`
+	CreatedAt        int64  `json:"created_at,omitempty"`
+}
+
+func (response *GiteeTokenResponse) String() string {
+	if response.Error != "" {
+		return fmt.Sprintf("%s=%s", "error_description", response.ErrorDescription)
+	}
+	return fmt.Sprintf("%s=%s&%s=%s&%s=%s&%s=%s&%s=%d", "access_token", response.AccessToken, "token_type", response.TokenType, "refresh_token", response.RefreshToken, "scope", response.Scope, "created_at", response.CreatedAt)
 }
 
 var Gitee *Idp
@@ -21,7 +33,7 @@ func init() {
 	Gitee = &Idp{
 		ClientId:             global.GiteeClientId,
 		ClientSecret:         global.GiteeClientSecret,
-		Platform:             "gitee",
+		Platform:             GiteePlatform,
 		AuthorizeUrl:         "https://gitee.com/oauth/authorize",
 		AuthorizeCallbackUrl: "http://10.0.7.112:9507/api/user/sso/gitee/redirect",
 		TokenUrl:             "https://gitee.com/oauth/token",
@@ -34,7 +46,7 @@ func init() {
 
 func getGiteeScope() scopeHandler {
 	return func() string {
-		return "user_info"
+		return "user_info emails"
 	}
 }
 
@@ -67,7 +79,7 @@ func getGiteeToken() tokenHandler {
 			"grant_type":    "authorization_code",
 			"code":          code,
 			"client_id":     Gitee.ClientId,
-			"redirect_uri":  Gitee.RedirectUrl,
+			"redirect_uri":  Gitee.AuthorizeCallbackUrl,
 			"client_secret": Gitee.ClientSecret,
 		}
 		paramsBytes, err := json.Marshal(params)
@@ -90,15 +102,7 @@ func getGiteeToken() tokenHandler {
 			}).Error("request receive error response")
 			return nil, err
 		}
-		var data GiteeTokenResponse
-		err = json.Unmarshal(resp, &data)
-		if err != nil {
-			global.Logger.WithFields(logrus.Fields{
-				"data": data,
-				"err":  err,
-			}).Errorf("unmarshal response data error")
-			return nil, err
-		}
-		return &data, nil
+
+		return resp, nil
 	}
 }

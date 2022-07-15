@@ -5,3 +5,4 @@ frontend
 static
 *.db
 *.exe
+test/*

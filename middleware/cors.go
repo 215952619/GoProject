@@ -1,18 +1,17 @@
 package middleware
 
 import (
+	"GoProject/global"
 	"GoProject/util"
-	"fmt"
 	"github.com/gin-gonic/gin"
 )
 
 func Cors() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		fmt.Println("cors")
 		method := c.Request.Method
 		origin := c.Request.Header.Get("Origin") //请求头部
-		if origin != "" {
-			//接收客户端发送的origin （重要！） TODO 需要区分环境
+		if origin != "" && global.Mode != "dev" {
+			//接收客户端发送的origin （重要！）
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
 			//服务器支持的所有跨域请求的方法
 			c.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE,UPDATE")

@@ -23,6 +23,16 @@ func (sc *ServiceControl) Control(action string) {
 			"action": action,
 			"err":    err,
 		}).Error("service run action error")
+		return
+	}
+	if action == "install" {
+		err = service.Control(sc.service, "start")
+		if err != nil {
+			global.Logger.WithFields(logrus.Fields{
+				"action": "start",
+				"err":    err,
+			}).Error("service start error")
+		}
 	}
 }
 
@@ -58,5 +68,11 @@ func (p *program) Stop(s service.Service) error {
 }
 
 func (p *program) Run() {
-	InitServer(p.Fs)
+	eg.Go(func() error {
+		return InitServer(p.Fs)
+	})
+
+	if err := eg.Wait(); err != nil {
+		global.Logger.Error("启动系统出错")
+	}
 }

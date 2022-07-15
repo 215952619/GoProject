@@ -17,7 +17,7 @@ func TestUrlParse(t *testing.T) {
 }
 
 func TestHttpClient(t *testing.T) {
-	res, err := util.HttpClient("https://baidu.com", util.Get, nil)
+	res, err := util.HttpClient("https://baidu.com", "get", nil, nil)
 	if err != nil {
 		t.Log(err)
 	}

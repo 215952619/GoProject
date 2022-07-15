@@ -15,7 +15,6 @@ type User struct {
 	Name      string `json:"name"`
 	Password  string `json:"-"`
 	Phone     string `json:"phone" gorm:"unique"`
-	Email     string `json:"email" gorm:"unique"`
 	Role      UserRoles
 	Status    UserStatus
 	GithubTag int `json:"github_tag,omitempty"`
@@ -46,6 +45,13 @@ func (u *User) GenJwt() (string, error) {
 		return "", err
 	}
 	return tokenString, nil
+}
+
+type UserBind struct {
+	gorm.Model
+	Platform string `json:"platform"`
+	User     User
+	UserId   int
 }
 
 type UserStdClaims struct {

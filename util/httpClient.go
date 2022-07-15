@@ -63,7 +63,7 @@ func HttpClient(url string, method string, params []byte, handler UpdateHeadFunc
 	resp, err := client.Do(req)
 	if err != nil {
 		global.Logger.WithFields(logrus.Fields{
-			"err":    err,
+			"err":    err.Error(),
 			"method": method,
 			"url":    parse.String(),
 			"params": params,
@@ -73,7 +73,7 @@ func HttpClient(url string, method string, params []byte, handler UpdateHeadFunc
 	}
 
 	defer resp.Body.Close()
-	response, err := ioutil.ReadAll(req.Body)
+	response, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		global.Logger.WithFields(logrus.Fields{
 			"err":      err,

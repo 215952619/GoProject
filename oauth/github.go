@@ -22,7 +22,7 @@ func init() {
 	Github = &Idp{
 		ClientId:             global.GithubClientId,
 		ClientSecret:         global.GithubClientSecret,
-		Platform:             "github",
+		Platform:             GithubPlatform,
 		AuthorizeUrl:         "https://github.com/login/oauth/authorize",
 		AuthorizeCallbackUrl: "http://10.0.7.112:9507/api/user/sso/github/redirect",
 		TokenUrl:             "https://github.com/login/oauth/access_token",
@@ -71,11 +71,6 @@ func getGithubToken() tokenHandler {
 			}).Error("request receive error response")
 			return nil, err
 		}
-		var data GithubTokenResponse
-		err = json.Unmarshal(resp, &data)
-		if err != nil {
-			return nil, err
-		}
-		return &data, nil
+		return resp, nil
 	}
 }

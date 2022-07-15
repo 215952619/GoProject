@@ -6,14 +6,20 @@ import (
 	"fmt"
 )
 
+type Platform string
 type scopeHandler func() string
 type codeHandler func(ip string) string
 type tokenHandler func(ip string, state string, code string) (interface{}, error)
 
+var (
+	GithubPlatform Platform = "github"
+	GiteePlatform  Platform = "gitee"
+)
+
 type Idp struct {
 	ClientId             string
 	ClientSecret         string
-	Platform             string
+	Platform             Platform
 	AuthorizeUrl         string
 	AuthorizeCallbackUrl string
 	TokenUrl             string

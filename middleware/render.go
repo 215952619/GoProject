@@ -3,7 +3,6 @@ package middleware
 import (
 	"GoProject/global"
 	"embed"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -17,8 +16,6 @@ func HtmlRender(urlPrefix string, fs embed.FS) gin.HandlerFunc {
 	const basePath = "frontend/dist"
 
 	return func(c *gin.Context) {
-
-		fmt.Println("render")
 		urlPath := strings.TrimSpace(c.Request.URL.Path)
 		if urlPath == urlPrefix {
 			urlPath = path.Join(urlPrefix, indexHtml)

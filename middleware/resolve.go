@@ -11,24 +11,24 @@ import (
 
 func Resolve() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		fmt.Println("reslove")
 		var user *database.User
 		user, err := ParseJwt(c)
 		if err != nil {
-			if err == util.TokenEmptyErrorTemplate.ToError() {
+			errString := util.ErrorToErrorString(err)
+			if errString.Code == util.TokenEmpty {
 				global.Logger.Debug("not logon")
 				c.Next()
 			} else {
-				c.JSON(util.CustomResponse(util.InvalidSignErrorTemplate, err.Error(), nil))
+				c.JSON(util.CustomResponse(util.DefaultError(util.InvalidSign), "", nil))
 				c.Abort()
 			}
 		} else {
-			if database.DBM.First(&user, "id=?", user.ID) != nil {
-				c.JSON(util.CustomResponse(util.NotFoundErrorTemplate, err.Error(), nil))
+			if err = database.DBM.First(&user, "id=?", user.ID); err != nil {
+				c.JSON(util.CustomResponse(util.DefaultError(util.NotFound), err.Error(), nil))
 				c.Abort()
 			}
 			if user.Status == database.Closed {
-				c.JSON(util.CustomResponse(util.NotFoundErrorTemplate, "", nil))
+				c.JSON(util.CustomResponse(util.DefaultError(util.NotFound), "", nil))
 				c.Abort()
 			}
 
@@ -47,7 +47,7 @@ func GetToken(c *gin.Context) (string, error) {
 	}
 
 	if len(token) <= minLength {
-		return "", util.TokenEmptyErrorTemplate
+		return "", util.DefaultError(util.TokenEmpty)
 	}
 	return token, nil
 }
@@ -57,10 +57,6 @@ func ParseJwt(c *gin.Context) (*database.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	//if tokenString == "" {
-	//	global.Logger.Debug("tokenString not allow nil")
-	//	return nil, util.TokenEmptyErrorTemplate
-	//}
 	claims := database.UserStdClaims{}
 	_, err = jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -71,5 +67,5 @@ func ParseJwt(c *gin.Context) (*database.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	return claims.User, err
+	return claims.User, nil
 }

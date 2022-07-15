@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func InitServer(sources *embed.FS) {
+func InitServer(sources *embed.FS) error {
 	util.InitCache()
 	database.InitDb()
 	r := InitRoutes(sources)
@@ -28,4 +28,5 @@ func InitServer(sources *embed.FS) {
 			"port": global.WebServeAddr,
 		}).Panic("start listen panic")
 	}
+	return err
 }

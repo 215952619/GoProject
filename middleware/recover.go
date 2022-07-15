@@ -11,6 +11,5 @@ func Recovery() gin.HandlerFunc {
 }
 
 func defaultHandleRecovery(c *gin.Context, err any) {
-	//c.JSON(util.UnKnowResponse(err.(string)))
-	c.JSON(util.UnKnowResponse(""))
+	c.JSON(util.UnKnowResponse(err.(string)))
 }
