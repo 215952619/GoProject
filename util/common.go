@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 var defaultLetters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
@@ -38,6 +39,7 @@ func GetSha256(str string) string {
 }
 
 func RandomString(length int, allowedChars ...[]rune) string {
+	rand.Seed(time.Now().Unix())
 	var letters []rune
 
 	if len(allowedChars) == 0 {
@@ -51,4 +53,9 @@ func RandomString(length int, allowedChars ...[]rune) string {
 		b[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(b)
+}
+
+func RandColor() string {
+	rand.Seed(time.Now().Unix())
+	return fmt.Sprintf("#%d%d%d", rand.Intn(255), rand.Intn(255), rand.Intn(255))
 }

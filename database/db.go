@@ -26,6 +26,8 @@ func (dm *DbManager) Migrate() {
 		&Article{},
 		&ArticleType{},
 		&ArticleLabel{},
+		&ArticleTypeRelation{},
+		&ArticleLabelRelation{},
 	); err != nil {
 		global.Logger.WithFields(logrus.Fields{
 			"err": err,
@@ -53,6 +55,10 @@ func (dm *DbManager) List(target interface{}) error {
 
 func (dm *DbManager) Create(target interface{}) error {
 	return dm.Db.Create(target).Error
+}
+
+func (dm *DbManager) Update(target interface{}, key string, value interface{}) error {
+	return dm.Db.Model(target).Update(key, value).Error
 }
 
 func (dm *DbManager) Paginate(target interface{}, req *gin.Context) error {

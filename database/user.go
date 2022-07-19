@@ -12,12 +12,11 @@ import (
 
 type User struct {
 	gorm.Model
-	Name      string `json:"name"`
-	Password  string `json:"-"`
-	Phone     string `json:"phone" gorm:"unique"`
-	Role      UserRoles
-	Status    UserStatus
-	GithubTag int `json:"github_tag,omitempty"`
+	Name     string `json:"name"`
+	Password string `json:"-"`
+	Phone    string `json:"phone" gorm:"unique"`
+	Role     UserRoles
+	Status   UserStatus
 }
 
 func (u *User) CheckPwd(pwd string) bool {
@@ -45,6 +44,22 @@ func (u *User) GenJwt() (string, error) {
 		return "", err
 	}
 	return tokenString, nil
+}
+
+type UserCollect struct {
+	gorm.Model
+	UserID    uint    `json:"user_id"`
+	User      User    `json:"user"`
+	ArticleID uint    `json:"article_id"`
+	Article   Article `json:"article"`
+}
+
+type UserHistory struct {
+	gorm.Model
+	UserID    uint    `json:"user_id"`
+	User      User    `json:"user"`
+	ArticleID uint    `json:"article_id"`
+	Article   Article `json:"article"`
 }
 
 type UserBind struct {

@@ -1,6 +1,8 @@
 package util
 
 import (
+	"GoProject/database"
+	"GoProject/global"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -35,11 +37,15 @@ func CustomResponse(err *ErrorString, msg string, data interface{}) (int, *Respo
 	return http.StatusOK, temp
 }
 
-type routeHandler func(c *gin.Context) (data interface{}, err error)
+type routeHandler func(c *gin.Context, user *database.User) (data interface{}, err error)
 
 func ResponseWarp(cb routeHandler) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		data, err := cb(c)
+		var user database.User
+		if data, exists := c.Get(global.AuthedKey); exists {
+			user = data.(database.User)
+		}
+		data, err := cb(c, &user)
 
 		if err != nil {
 			errorCode := ErrorToErrorString(err)

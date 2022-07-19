@@ -3,6 +3,7 @@ package util
 import (
 	"GoProject/global"
 	"github.com/patrickmn/go-cache"
+	"github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -15,13 +16,20 @@ func InitCache() {
 
 func SetCache(key string, value interface{}, d time.Duration) {
 	cacheAdapter.Set(key, value, d)
+	global.Logger.WithFields(logrus.Fields{
+		"key":   key,
+		"value": value,
+	}).Debug("set cache")
 }
 
 func SetCacheWithDefault(key string, value interface{}) {
-	cacheAdapter.Set(key, value, global.DefaultCacheExpiredTime)
+	SetCache(key, value, global.DefaultCacheExpiredTime)
 }
 
-func GetCache(key string) (interface{}, bool) {
+func GetCache(key string) (value interface{}, exists bool) {
+	global.Logger.WithFields(logrus.Fields{
+		"key": key,
+	}).Debug("get cache")
 	return cacheAdapter.Get(key)
 }
 
