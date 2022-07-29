@@ -16,12 +16,13 @@ func defaultHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"msg": "not Implementation"})
 }
 
-func logon(c *gin.Context) (data interface{}, err error) {
+func login(c *gin.Context, _ *database.User) (data interface{}, err error) {
 	var form logonRequest
 	err = c.ShouldBind(&form)
 	if err != nil {
 		return nil, util.DefaultError(util.ParamsParseFailed)
 	}
+	//return nil, nil
 	result, err := form.CheckCode()
 	if err != nil {
 		return nil, util.DefaultError(util.CaptchaParseFailed)
@@ -44,7 +45,7 @@ func logon(c *gin.Context) (data interface{}, err error) {
 	return
 }
 
-func getCode(c *gin.Context) (data interface{}, err error) {
+func getCode(c *gin.Context, _ *database.User) (data interface{}, err error) {
 	platform := c.Param("platform")
 	ip := c.ClientIP()
 	switch platform {
@@ -57,7 +58,7 @@ func getCode(c *gin.Context) (data interface{}, err error) {
 	}
 }
 
-func ssoRedirect(c *gin.Context) (data interface{}, err error) {
+func ssoRedirect(c *gin.Context, _ *database.User) (data interface{}, err error) {
 	platform := c.Param("platform")
 	state := c.Query("state")
 	code := c.Query("code")
@@ -74,11 +75,10 @@ func ssoRedirect(c *gin.Context) (data interface{}, err error) {
 		}
 
 		var data oauth.GithubTokenResponse
-		err = json.Unmarshal(token.([]byte), &data)
-		if err != nil {
+		if err = json.Unmarshal(token.([]byte), &data); err != nil {
 			return nil, util.UnKnowError(err.Error())
 		}
-		c.Redirect(http.StatusMovedPermanently, fmt.Sprintf("%s?abc=123&token=%s", oauth.Github.RedirectUrl, data))
+		c.Redirect(http.StatusMovedPermanently, fmt.Sprintf("%s?%s", oauth.Github.RedirectUrl, data.String()))
 		return nil, nil
 	case string(oauth.GiteePlatform):
 		token, err := oauth.Gitee.GetToken(c.ClientIP(), state, code)
@@ -91,18 +91,20 @@ func ssoRedirect(c *gin.Context) (data interface{}, err error) {
 		}
 
 		var data oauth.GiteeTokenResponse
-		err = json.Unmarshal(token.([]byte), &data)
-		if err != nil {
+		if err = json.Unmarshal(token.([]byte), &data); err != nil {
 			return nil, util.UnKnowError(err.Error())
 		}
-		c.Redirect(http.StatusMovedPermanently, fmt.Sprintf("%s?abc=123&token=%s", oauth.Gitee.RedirectUrl, data.String()))
+		//if data.Error != "" {
+		//	return nil, util.UnKnowError(data.ErrorDescription)
+		//}
+		c.Redirect(http.StatusMovedPermanently, fmt.Sprintf("%s?%s", oauth.Gitee.RedirectUrl, data.String()))
 		return nil, nil
 	default:
 		return nil, util.UnKnowError("未知的身份提供者")
 	}
 }
 
-func createUser(c *gin.Context) (data interface{}, err error) {
+func createUser(c *gin.Context, _ *database.User) (data interface{}, err error) {
 	var newUser NewUserRequest
 	if err := c.ShouldBind(&newUser); err != nil {
 		if err := database.DBM.Create(&newUser); err != nil {
@@ -112,7 +114,7 @@ func createUser(c *gin.Context) (data interface{}, err error) {
 	return nil, nil
 }
 
-func userList(c *gin.Context) (data interface{}, err error) {
+func userList(c *gin.Context, _ *database.User) (data interface{}, err error) {
 	var users []database.User
 	if err := database.DBM.List(&users); err != nil {
 		return nil, util.UnKnowError(err.Error())
@@ -121,7 +123,7 @@ func userList(c *gin.Context) (data interface{}, err error) {
 	}
 }
 
-func userDetail(c *gin.Context) (data interface{}, err error) {
+func userDetail(c *gin.Context, _ *database.User) (data interface{}, err error) {
 	id := c.Param("id")
 	if len(id) > 0 {
 		var user database.User

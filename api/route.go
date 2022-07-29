@@ -8,8 +8,7 @@ import (
 )
 
 func InitRoute(r *gin.Engine) {
-	apiRouter := r.Group("/api")
-	apiRouter.Use(middleware.Resolve())
+	apiRouter := r.Group("/api", middleware.Resolve())
 	user.InitRoute(apiRouter)
 	article.InitRoute(apiRouter)
 }

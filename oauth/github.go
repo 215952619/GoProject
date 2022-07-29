@@ -3,17 +3,25 @@ package oauth
 import (
 	"GoProject/global"
 	"GoProject/util"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 type GithubTokenResponse struct {
-	AccessToken string `json:"access_token"`
-	Scope       string `json:"scope"`
-	TokenType   string `json:"token_type"`
+	Error            string `json:"error"`
+	ErrorDescription string `json:"error_description"`
+	ErrorUri         string `json:"error_uri"`
+	AccessToken      string `json:"access_token"`
+	Scope            string `json:"scope"`
+	TokenType        string `json:"token_type"`
+}
+
+func (response *GithubTokenResponse) String() string {
+	if response.Error != "" {
+		return fmt.Sprintf("%s=%s", "error_description", response.ErrorDescription)
+	}
+	return fmt.Sprintf("%s=%s&%s=%s&%s=%s", "AccessToken", response.AccessToken, "Scope", response.Scope, "TokenType", response.TokenType)
 }
 
 var Github *Idp
@@ -53,16 +61,10 @@ func getGithubToken() tokenHandler {
 			"client_id":     Github.ClientId,
 			"client_secret": Github.ClientSecret,
 			"code":          code,
-			"redirect_uri":  Github.RedirectUrl,
-		}
-		paramsBytes, err := json.Marshal(params)
-		if err != nil {
-			return nil, err
+			"redirect_uri":  Github.AuthorizeCallbackUrl,
 		}
 
-		resp, err := util.PostRequest(Github.TokenUrl, paramsBytes, func(header *http.Header) {
-			header.Set("Content-type", "application/json")
-		})
+		resp, err := util.PostJsonRequest(Github.TokenUrl, params, nil)
 		if err != nil {
 			global.Logger.WithFields(logrus.Fields{
 				"err":    err,

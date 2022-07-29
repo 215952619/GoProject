@@ -25,7 +25,10 @@ func NewCaptcha() (string, string, string, error) {
 
 func CheckCaptcha(dots interface{}, secret string) (bool, error) {
 	type dot [][]int
-	dotMap := dots.(dot)
+	dotMap, ok := dots.(dot)
+	if !ok {
+		return false, errors.New("校验数据格式错误")
+	}
 	realDots, err := AesDecrypt([]byte(secret), []byte(global.AesSecret)[:global.AesLength])
 	if err != nil {
 		global.Logger.WithFields(logrus.Fields{

@@ -3,11 +3,9 @@ package oauth
 import (
 	"GoProject/global"
 	"GoProject/util"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 type GiteeTokenResponse struct {
@@ -82,18 +80,8 @@ func getGiteeToken() tokenHandler {
 			"redirect_uri":  Gitee.AuthorizeCallbackUrl,
 			"client_secret": Gitee.ClientSecret,
 		}
-		paramsBytes, err := json.Marshal(params)
-		if err != nil {
-			global.Logger.WithFields(logrus.Fields{
-				"params": params,
-				"err":    err,
-			}).Errorf("marshal params error")
-			return nil, err
-		}
 
-		resp, err := util.PostRequest(Gitee.TokenUrl, paramsBytes, func(header *http.Header) {
-			header.Set("Content-type", "application/json")
-		})
+		resp, err := util.PostJsonRequest(Gitee.TokenUrl, params, nil)
 		if err != nil {
 			global.Logger.WithFields(logrus.Fields{
 				"err":  err,

@@ -108,13 +108,14 @@ type ArticleLabelRelation struct {
 type Comment struct {
 	gorm.Model
 	//Target Comment `json:"target"`
-	UserID uint `json:"user_id"`
-	User   User `json:"user"`
+	UserID  uint   `json:"user_id"`
+	User    User   `json:"user"`
+	Content string `json:"content"`
+	Mark    bool   `json:"mark"`
 }
 
 func PopularList() (data []MiniArticle, err error) {
-	var result []MiniArticle
-	err = DBM.Db.Model(&Article{}).Where("private=?", false).Order("hits").Limit(10).Find(&result).Error
+	err = DBM.Db.Model(&Article{}).Where("private=?", false).Order("hits desc").Limit(10).Find(&data).Error
 	return
 }
 
