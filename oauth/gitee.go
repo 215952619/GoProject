@@ -1,45 +1,39 @@
 package oauth
 
 import (
+	"GoProject/database"
 	"GoProject/global"
 	"GoProject/util"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
 )
 
-type GiteeTokenResponse struct {
-	Error            string `json:"error,omitempty"`
-	ErrorDescription string `json:"error_description,omitempty"`
-	AccessToken      string `json:"access_token,omitempty"`
-	TokenType        string `json:"token_type,omitempty"`
-	RefreshToken     string `json:"refresh_token,omitempty"`
-	Scope            string `json:"scope,omitempty"`
-	CreatedAt        int64  `json:"created_at,omitempty"`
-}
-
-func (response *GiteeTokenResponse) String() string {
-	if response.Error != "" {
-		return fmt.Sprintf("%s=%s", "error_description", response.ErrorDescription)
-	}
-	return fmt.Sprintf("%s=%s&%s=%s&%s=%s&%s=%s&%s=%d", "access_token", response.AccessToken, "token_type", response.TokenType, "refresh_token", response.RefreshToken, "scope", response.Scope, "created_at", response.CreatedAt)
-}
-
 var Gitee *Idp
 
 func init() {
-	Gitee = &Idp{
-		ClientId:             global.GiteeClientId,
-		ClientSecret:         global.GiteeClientSecret,
-		Platform:             GiteePlatform,
-		AuthorizeUrl:         "https://gitee.com/oauth/authorize",
-		AuthorizeCallbackUrl: "http://10.0.7.112:9507/api/user/sso/gitee/redirect",
-		TokenUrl:             "https://gitee.com/oauth/token",
-		RedirectUrl:          fmt.Sprintf("%s/gitee", global.SsoRedirectUrl),
-		GetScopeHandler:      getGiteeScope(),
-		GetCodeHandler:       getGiteeCode(),
-		GetTokenHandler:      getGiteeToken(),
-	}
+	go func() {
+		select {
+		case <-global.InitChan:
+			Gitee = &Idp{
+				ClientId:             global.GiteeClientId,
+				ClientSecret:         global.GiteeClientSecret,
+				Platform:             GiteePlatform,
+				AuthorizeUrl:         "https://gitee.com/oauth/authorize",
+				AuthorizeCallbackUrl: fmt.Sprintf("%sapi/user/sso/gitee/redirect", global.Local),
+				TokenUrl:             "https://gitee.com/oauth/token",
+				RedirectUrl:          "%s/gitee",
+				GetScopeHandler:      getGiteeScope(),
+				GetCodeHandler:       getGiteeCode(),
+				GetTokenHandler:      getGiteeToken(),
+				GetUserInfoHandler:   getGiteeUserInfo(),
+			}
+		}
+		defer func() {
+			global.InitChan <- true
+		}()
+	}()
 }
 
 func getGiteeScope() scopeHandler {
@@ -49,14 +43,14 @@ func getGiteeScope() scopeHandler {
 }
 
 func getGiteeCode() codeHandler {
-	return func(ip string) string {
-		state := Gitee.GenerateState(ip)
+	return func(ip string, refer string) string {
+		state := Gitee.GenerateState(ip, refer)
 		return fmt.Sprintf("%s?client_id=%s&redirect_uri=%s&scope=%s&state=%s&response_type=code", Gitee.AuthorizeUrl, Gitee.ClientId, Gitee.AuthorizeCallbackUrl, Gitee.GetScope(), state)
 	}
 }
 
 func getGiteeToken() tokenHandler {
-	return func(ip string, state string, code string) (interface{}, error) {
+	return func(ip string, state string, code string) (interface{}, string, error) {
 		defer func() {
 			global.Logger.WithFields(logrus.Fields{
 				"ip": ip,
@@ -70,7 +64,7 @@ func getGiteeToken() tokenHandler {
 				"state": state,
 				"real":  Gitee.GetState(ip),
 			}).Errorf("valid state err")
-			return nil, errors.New("not invalid state")
+			return nil, "", errors.New("not invalid state")
 		}
 
 		var params = map[string]string{
@@ -88,9 +82,26 @@ func getGiteeToken() tokenHandler {
 				"url":  Gitee.TokenUrl,
 				"resp": resp,
 			}).Error("request receive error response")
+			return nil, "", err
+		}
+
+		return resp, Gitee.GetRefer(ip), nil
+	}
+}
+
+func getGiteeUserInfo() userInfoHandler {
+	return func(token string) (*database.OauthUser, error) {
+		res, err := util.GetRequest("https://gitee.com/api/v5/user", map[string]string{"access_token": token}, nil)
+
+		if err != nil {
 			return nil, err
 		}
 
-		return resp, nil
+		var data *database.OauthUser
+		if err = json.Unmarshal(res, &data); err != nil {
+			return nil, err
+		}
+
+		return data, nil
 	}
 }

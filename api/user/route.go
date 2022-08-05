@@ -7,7 +7,9 @@ import (
 
 func InitRoute(rg *gin.RouterGroup) {
 	userRouter := rg.Group("/user")
+	userRouter.POST("/bind", middleware.ResponseWarp(userBind))
 	userRouter.POST("/login", middleware.ResponseWarp(login))
+	userRouter.POST("/login/check", middleware.ResponseWarp(userBindCheck))
 	userRouter.GET("/sso/:platform", middleware.ResponseWarp(getCode))
 	userRouter.GET("/sso/:platform/redirect", middleware.ResponseWarp(ssoRedirect))
 

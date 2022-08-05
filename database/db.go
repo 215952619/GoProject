@@ -23,6 +23,8 @@ type DbManager struct {
 func (dm *DbManager) Migrate() {
 	if err := dm.Db.AutoMigrate(
 		&User{},
+		&OauthUser{},
+		&UserBind{},
 		&Article{},
 		&ArticleType{},
 		&ArticleLabel{},
@@ -45,8 +47,24 @@ func (dm *DbManager) Transaction(fn func(tx *gorm.DB) error) {
 	}
 }
 
+func (dm *DbManager) Exist(target interface{}, query interface{}, args ...interface{}) (bool, error) {
+	result := dm.Db.Where(query, args).First(target)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return false, nil
+	}
+	if result.RowsAffected > 0 {
+		return true, result.Error
+	} else {
+		return false, result.Error
+	}
+}
+
 func (dm *DbManager) First(target interface{}, query interface{}, args ...interface{}) error {
-	return dm.Db.Where(query, args).Order("updated_at desc").First(target).Error
+	return dm.Db.Where(query, args...).Order("updated_at desc").First(target).Error
+}
+
+func (dm *DbManager) Upsert(target interface{}, assign interface{}, cond interface{}) error {
+	return dm.Db.Where(cond).Assign(assign).FirstOrCreate(target).Error
 }
 
 func (dm *DbManager) List(target interface{}) error {

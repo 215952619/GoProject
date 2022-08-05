@@ -13,6 +13,7 @@ import (
 type User struct {
 	gorm.Model
 	Name     string `json:"name"`
+	Avatar   string `json:"avatar"`
 	Password string `json:"-"`
 	Phone    string `json:"phone" gorm:"unique"`
 	Role     UserRoles
@@ -62,11 +63,39 @@ type UserHistory struct {
 	Article   Article `json:"article"`
 }
 
+type OauthUser struct {
+	PlatformID        uint      `json:"platform_id" gorm:"autoIncrement:true;uniqueIndex"`
+	ID                uint      `json:"id" gorm:"primaryKey;autoIncrement:false"`
+	Platform          string    `json:"platform" gorm:"primaryKey;autoIncrement:false"`
+	Login             string    `json:"login"`
+	Name              string    `json:"name"`
+	AvatarUrl         string    `json:"avatar_url"`
+	Url               string    `json:"url"`
+	HtmlUrl           string    `json:"html_url"`
+	FollowersUrl      string    `json:"followers_url"`
+	FollowingUrl      string    `json:"following_url"`
+	GistsUrl          string    `json:"gists_url"`
+	StarredUrl        string    `json:"starred_url"`
+	SubscriptionsUrl  string    `json:"subscriptions_url"`
+	OrganizationsUrl  string    `json:"organizations_url"`
+	ReposUrl          string    `json:"repos_url"`
+	EventsUrl         string    `json:"events_url"`
+	ReceivedEventsUrl string    `json:"received_events_url"`
+	PublicRepos       uint      `json:"public_repos"`
+	PublicGists       uint      `json:"public_gists"`
+	Followers         uint      `json:"followers"`
+	Watched           uint      `json:"watched"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
+	Email             string    `json:"email"`
+}
+
 type UserBind struct {
 	gorm.Model
-	Platform string `json:"platform"`
-	User     User
-	UserId   int
+	PlatformId string    `json:"platform_id" `
+	OauthUser  OauthUser `json:"oauth_user" gorm:"foreignKey:platform_id;references:platform_id"`
+	User       User
+	UserId     int
 }
 
 type UserStdClaims struct {

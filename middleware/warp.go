@@ -23,6 +23,8 @@ func ResponseWarp(cb routeHandler) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(util.SuccessResponse(data))
+		if data != nil {
+			c.JSON(util.SuccessResponse(data))
+		}
 	}
 }

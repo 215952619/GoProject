@@ -10,6 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"net/url"
+	"strconv"
 )
 
 func defaultHandler(c *gin.Context) {
@@ -45,17 +47,70 @@ func login(c *gin.Context, _ *database.User) (data interface{}, err error) {
 	return
 }
 
+func userBindCheck(c *gin.Context, _ *database.User) (data interface{}, err error) {
+	var requestData CheckRequest
+	err = c.ShouldBind(&requestData)
+	if err != nil {
+		return nil, err
+	}
+
+	var oauthUser *database.OauthUser
+	if err = database.DBM.First(&oauthUser, "platform=? and id=?", requestData.Platform, requestData.ID); err != nil {
+		return nil, err
+	}
+	var userBind *database.UserBind
+	exist, err := database.DBM.Exist(&userBind, "platform_id=?", oauthUser.PlatformID)
+	if err != nil {
+		return nil, err
+	}
+
+	if exist {
+		jwt, err := userBind.User.GenJwt()
+		if err != nil {
+			//c.JSON(util.UnKnowResponse("生成密钥失败"))
+			return nil, util.UnKnowError("生成密钥失败")
+		}
+		return gin.H{"exist": exist, "token": jwt}, err
+	} else {
+		return gin.H{"exist": exist}, err
+	}
+}
+
+func userBind(c *gin.Context, _ *database.User) (data interface{}, err error) {
+	var response *BindRequest
+	err = c.ShouldBind(&response)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := response.CheckPwd()
+	if err != nil {
+		return nil, err
+	}
+
+	jwt, err := user.GenJwt()
+	if err != nil {
+		return nil, util.UnKnowError("生成密钥失败")
+	}
+	data = gin.H{"token": jwt}
+	return data, nil
+}
+
 func getCode(c *gin.Context, _ *database.User) (data interface{}, err error) {
 	platform := c.Param("platform")
 	ip := c.ClientIP()
+	refer := c.GetHeader("Referer")
+
+	var idp *oauth.Idp
 	switch platform {
 	case string(oauth.GithubPlatform):
-		return oauth.Github.RedirectIdpAuthorizeUrl(ip), nil
+		idp = oauth.Github
 	case string(oauth.GiteePlatform):
-		return oauth.Gitee.RedirectIdpAuthorizeUrl(ip), nil
+		idp = oauth.Gitee
 	default:
 		return nil, util.UnKnowError("未知的身份提供商")
 	}
+	return idp.RedirectIdpAuthorizeUrl(ip, refer)
 }
 
 func ssoRedirect(c *gin.Context, _ *database.User) (data interface{}, err error) {
@@ -63,45 +118,50 @@ func ssoRedirect(c *gin.Context, _ *database.User) (data interface{}, err error)
 	state := c.Query("state")
 	code := c.Query("code")
 
+	var idp *oauth.Idp
 	switch platform {
 	case string(oauth.GithubPlatform):
-		token, err := oauth.Github.GetToken(c.ClientIP(), state, code)
-		if err != nil {
-			global.Logger.WithFields(logrus.Fields{
-				"err":      err,
-				"platform": platform,
-			}).Error("sso get idp info error")
-			return nil, util.UnKnowError("获取token失败")
-		}
-
-		var data oauth.GithubTokenResponse
-		if err = json.Unmarshal(token.([]byte), &data); err != nil {
-			return nil, util.UnKnowError(err.Error())
-		}
-		c.Redirect(http.StatusMovedPermanently, fmt.Sprintf("%s?%s", oauth.Github.RedirectUrl, data.String()))
-		return nil, nil
+		idp = oauth.Github
 	case string(oauth.GiteePlatform):
-		token, err := oauth.Gitee.GetToken(c.ClientIP(), state, code)
-		if err != nil {
-			global.Logger.WithFields(logrus.Fields{
-				"err":      err,
-				"platform": platform,
-			}).Error("sso get idp info error")
-			return nil, util.UnKnowError("获取token失败")
-		}
-
-		var data oauth.GiteeTokenResponse
-		if err = json.Unmarshal(token.([]byte), &data); err != nil {
-			return nil, util.UnKnowError(err.Error())
-		}
-		//if data.Error != "" {
-		//	return nil, util.UnKnowError(data.ErrorDescription)
-		//}
-		c.Redirect(http.StatusMovedPermanently, fmt.Sprintf("%s?%s", oauth.Gitee.RedirectUrl, data.String()))
-		return nil, nil
+		idp = oauth.Gitee
 	default:
 		return nil, util.UnKnowError("未知的身份提供者")
 	}
+
+	token, refer, err := idp.GetToken(c.ClientIP(), state, code)
+	if err != nil {
+		global.Logger.WithFields(logrus.Fields{
+			"err":      err,
+			"platform": platform,
+		}).Error("sso get idp info error")
+		return nil, util.UnKnowError("获取token失败")
+	}
+
+	var response oauth.TokenResponse
+	if err = json.Unmarshal(token.([]byte), &response); err != nil {
+		return nil, util.UnKnowError(err.Error())
+	}
+
+	userinfo, err := idp.GetUserInfo(response.AccessToken)
+	if err != nil {
+		global.Logger.WithFields(logrus.Fields{
+			"err":      err,
+			"platform": platform,
+		}).Error("获取用户信息失败")
+		return nil, util.UnKnowError("获取用户信息失败")
+	}
+
+	urlObj, err := url.Parse(fmt.Sprintf(idp.RedirectUrl, refer))
+	params := url.Values{}
+	params.Set("id", strconv.Itoa(int(userinfo.ID)))
+	params.Set("name", userinfo.Name)
+	params.Set("avatar", userinfo.AvatarUrl)
+	params.Set("email", userinfo.Email)
+	params.Set("platform", userinfo.Platform)
+	urlObj.RawQuery = params.Encode()
+
+	c.Redirect(http.StatusMovedPermanently, urlObj.String())
+	return nil, nil
 }
 
 func createUser(c *gin.Context, _ *database.User) (data interface{}, err error) {

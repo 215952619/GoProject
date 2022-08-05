@@ -18,6 +18,7 @@ func init() {
 	flag.Parse()
 
 	core.InitLogger()
+	global.InitChan <- true
 }
 
 func main() {
